@@ -48,12 +48,26 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
 .up{position:relative;overflow:hidden;display:inline-block}.up input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 
 .stat b{font-size:22px}.stat span{font-size:11px}.red{color:#d9534f}.msg{border-left:4px solid var(--ac);background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-weight:600}
+.tm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 0 10px 40px;font-size:13px;color:var(--mu)}.tm b{color:var(--tx)}.tb{font:inherit;font-size:13px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:6px 10px}.stp{margin-top:12px;border-top:1px solid var(--bd);padding-top:12px}.stp input{font:inherit;width:120px;margin-left:6px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px}
+.ex:disabled{color:var(--tx)}.btn:disabled{opacity:.5}
 </style>
 </head>
 <body>
 <main>
-<h1 id="h1"></h1>
+<div style="display:flex;justify-content:space-between;align-items:center"><h1 id="h1"></h1><button class="tb" id="gear" aria-label="Configuración">⚙️</button></div>
 <div class="sub" id="sub"></div>
+<div class="card" id="cfg" style="display:none">
+  <h2>⚙️ Configuración</h2>
+  <h2 style="font-size:15px;margin-top:12px">📏 Corregir medidas</h2>
+  <p class="note">Si te equivocaste al escribir una medida, corrígela aquí.</p>
+  <div id="cfgmed"></div>
+  <h2 style="font-size:15px;margin-top:12px">📅 Fecha de inicio del programa</h2>
+  <label><input type="date" id="start"></label>
+  <p class="note" id="startnote"></p>
+  <h2 style="font-size:15px;margin-top:12px">🧹 Empezar de cero</h2>
+  <button class="tb" id="cfgreset">Borrar todo y empezar de nuevo</button>
+  <p class="note" id="cfgmsg"></p>
+</div>
 <div class="card stats">
   <div class="stat"><b id="streak">0</b><span>🔥 racha</span></div>
   <div class="stat"><b id="best">0</b><span>🏆 mejor</span></div>
@@ -63,7 +77,7 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
 <div class="card"><div class="week" id="week"></div>
 <p class="note" style="margin:8px 0 0">✅ hecho · 😴 descanso marcado · ➖ descanso sin marcar · ❌ no hiciste tus ejercicios</p></div>
 <div class="card" id="day"></div>
-<div class="card">
+<div class="card" id="medc">
   <h2>📏 Mis medidas</h2>
   <p class="note" id="mednote"></p>
   <div id="medform"><div class="mg" id="mg"></div><button class="btn" id="m_save">Guardar medidas</button></div>
@@ -71,7 +85,7 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
 </div>
 <div class="card" id="phc" style="display:none">
   <h2>📸 Fotos de progreso</h2>
-  <p class="note">¡Desbloqueaste las fotos por tu constancia! Tómalas con la misma luz, distancia y postura. Se guardan en este teléfono.</p>
+  <p class="note">Toca fotos de progreso: tómalas con la misma luz, distancia y postura. Aparecen cada 2 semanas (semanas 2, 4, 6, 8, 10, 12 y así sucesivamente). Se guardan en este teléfono.</p>
   <div class="row">
     <select id="ph_lab"><option>Frente</option><option>Lado</option><option>Espalda</option></select>
     <span class="btn up">Añadir foto<input type="file" accept="image/*" id="ph_in"></span>
@@ -93,7 +107,6 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
   <span class="btn up" style="margin-left:8px">Restaurar respaldo<input type="file" accept=".json,application/json" id="rs_in"></span>
   <p class="note" id="dlmsg"></p>
 </div>
-<div class="card"><label>Fecha de inicio del programa <input type="date" id="start"></label></div>
 </main>
 <script>
 var C={
@@ -102,28 +115,29 @@ var C={
   rest:["Te mereces descansar hoy, te ganaste un masaje. 💆‍♀️","Hidrátate muy bien y descansa. ¡Te quiero mucho! 💧","Hoy toca descansar: tu cuerpo se pone más fuerte mientras descansa. ¡Te lo ganaste!","Descansar también es parte del plan. ¡Eres la mejor!"],
   done:["¡Lo lograste otra vez! Estoy muy orgulloso de ti. 🎉","¡Hoy lo diste todo, campeona! 🏅","Día completo, chiquita. Te quiero mucho, descansa y toma agua. 💧","Eres increíble. ¡Un día más ganado! ✨","Sabía que tú podías, chiquita. ¡Así se hace! 💪","Te amo y eres genial. ¡Hoy te lo ganaste!","Eres la mejor persona que he conocido. ¡Eso, Marileidy Paulino! 🏃‍♀️","Cada día que lo haces te haces más fuerte. ¡Te quiero mucho!"]
  },
- photoAt:14,reps:false,
+ photoWeeks:[2,4,6,8,10,12],audioDir:"a7k2q9m4x1",testDay:["2026-11-08","2026-11-09"],reps:false,
  meas:[["Peso","peso","lb"],["Estatura","est","cm"]],delta:false,audio:true,
  medNote:"Mídete una vez al mes, a la misma hora y con ropa parecida. El peso puede variar por líquidos y por el ciclo menstrual, así que una subida pequeña es normal.",
- phase:function(w){return w<=2?"Fase 1: adaptación, ve suave":w<=4?"Fase 2: ganando resistencia":w<=8?"Fase 3: fortaleciendo el cuerpo":"Fase 4: consolidación"},
+ phase:function(w){return w<=2?"Series: 2 · ritmo suave":w<=4?"Series: 2 · ritmo moderado":w<=6?"Series: 2–3 · ritmo moderado":w<=10?"Series: 3 · ritmo moderado":w<=12?"Series: 3 · según tu capacidad":"3 series · más repeticiones"},
+ steps:function(w){return w<=2?[4000,5000]:w<=4?[5000,6000]:w<=6?[6000,7000]:w<=8?[7000,8000]:w<=10?[8000,9000]:w<=12?[8000,10000]:[8000+500*Math.min(4,Math.floor((w-11)/2)),10000+500*Math.min(4,Math.floor((w-11)/2))]},
+ walk:function(w){
+  var g=C.steps(w);
+  return{t:"Caminata o salida a correr",walk:1,goal:g,n:"Meta de hoy: "+fmtn(g[0])+"–"+fmtn(g[1])+" pasos",ex:[["Caminar o correr","5 min suave · 15–25 min a ritmo moderado · 5 min suave. Si sales a correr, también cuenta. Se completa cuando subes tu captura y tocas Finalizar caminata."]]};
+ },
  plan:function(dw,w){
-  if(dw===6)return null;
-  if(dw===1||dw===3)return{t:"Caminata suave",walk:1,ex:[["Caminata","15–20 min a ritmo cómodo"]]};
-  if(dw===5)return{t:"Caminata tranquila",walk:1,ex:[["Caminata","20–30 min a ritmo cómodo"]]};
-  var A=["Calentamiento","3–5 min de movimientos suaves"],Z=["Estiramiento final","3 min de movimientos suaves"];
-  var R=[
-   {t:"Rutina suave",n:"2 rondas · descansa 60–90 s",ex:[["Marcha en el sitio","2 min"],["Sentadillas","10"],["Puente de glúteos","12"],["Flexiones contra la pared","10"],["Pasos laterales","1 min"],["Plancha con rodillas apoyadas","10 segundos"]]},
-   {t:"Rutina de resistencia",n:"2 rondas · descansa 60 s",ex:[["Marcha rápida","2 min"],["Sentadillas","12"],["Zancadas hacia atrás asistidas","6 por pierna"],["Puente de glúteos","15"],["Flexiones contra la pared","12"],["Bird-dog","8 por lado"],["Plancha con rodillas","15 segundos"]]},
-   [{t:"Piernas y glúteos",n:"2 rondas (3 si te sientes bien)",ex:[["Sentadillas","15"],["Zancadas hacia atrás","10 por pierna"],["Puente de glúteos","15"],["Sentadillas sumo","12"]]},
-    {t:"Cuerpo completo",n:"2 rondas (3 si te sientes bien)",ex:[["Sentadillas","12"],["Flexiones contra la pared","12"],["Bird-dog","10 por lado"],["Plancha con rodillas","20 segundos"],["Marcha rápida","2 min"]]},
-    {t:"Cardio y abdomen",n:"2 rondas (3 si te sientes bien)",ex:[["Marcha","2 min"],["Pasos laterales","1 min"],["Abdominales cortos","12"],["Elevaciones de rodillas","10 por lado"],["Plancha","20 segundos"]]}],
-   [{t:"Fuerza",n:"2–3 rondas según cómo te sientas",ex:[["Sentadillas","15"],["Zancadas hacia atrás","10 por pierna"],["Puente de glúteos","15"],["Flexiones contra la pared","15"]]},
-    {t:"Cardio",n:"Repite el circuito 3 veces",ex:[["Marcha rápida","3 min"],["Pasos laterales","1 min"],["Rodillas elevadas sin saltar","1 min"]]},
-    {t:"Cuerpo completo",n:"2–3 rondas según cómo te sientas",ex:[["Sentadillas","15"],["Puente de glúteos","12"],["Flexiones contra la pared","10"],["Bird-dog","10 por lado"],["Plancha con rodillas","20–25 segundos"]]}]
-  ];
-  var ph=w<=2?0:w<=4?1:w<=8?2:3,r=R[ph];
-  if(Array.isArray(r))r=r[dw/2];
-  return{t:r.t,n:r.n,ex:[A].concat(r.ex,[Z])};
+  if(dw===2||dw===6)return null;
+  if(dw===1||dw===4||dw===5){
+   return C.walk(w);
+  }
+  var p=Math.min(5,Math.floor((w-1)/2)),SE=[2,2,"2–3",3,3,3];
+  var ex=w>12?Math.min(4,Math.floor((w-11)/2)):0;
+  function X(nm,r,u){return[nm,SE[p]+" × "+(r[p]+(ex?(u&&u.indexOf(" seg")===0?ex*5:ex*2):0))+(u||"")]}
+  var A=["Calentamiento (5–7 min)","Marcha en el sitio: 2 min<br>Círculos de hombros: 10 hacia atrás y 10 hacia adelante<br>Círculos de cadera lentos: 8 por lado<br>Gato-vaca en cuatro apoyos: 8 lentas<br>Círculos de tobillos: 8 por lado<br>Sentadillas lentas hasta la mitad: 8"];
+  var Z=["Estiramiento final (3–5 min)","Sin rebotar, 20–30 seg cada uno:<br>Cuádriceps de pie, por lado<br>Parte trasera del muslo, por lado<br>Pecho con la mano apoyada en la pared<br>Postura del niño: 30 seg<br>Respira profundo 5 veces"];
+  var N="Descansa 30–60 seg entre ejercicios · sin crunches, torsiones fuertes ni movimientos bruscos";
+  var SQ=X("Sentadilla sin peso",[12,15,15,15,18,20]),PU=X("Puente de glúteos",[12,12,12,12,12,12]);
+  if(dw===0)return{t:"Fuerza A · core, piernas y glúteos",n:N,ex:[A,X("Plancha modificada",[15,20,20,20,25,30]," seg"),X("Bird-Dog",[8,10,10,10,10,10]," por lado"),X("Dead Bug",[8,10,10,10,10,10]," por lado"),PU,X("Clamshell",[10,12,12,12,12,12]," por lado"),SQ,Z]};
+  return{t:"Fuerza B · espalda, brazos y equilibrio",n:N,ex:[A,SQ,X("Remo con botellas de agua",[12,15,15,15,18,20]),X("Flexiones contra la pared",[10,12,12,12,12,15]),X("Wall Angels",[10,10,10,10,10,10]),X("Equilibrio en un pie",[20,20,25,25,30,30]," seg por lado"),PU,Z]};
  }
 };
 var DN=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
@@ -132,7 +146,7 @@ var $=function(i){return document.getElementById(i)};
 function load(){
   try{var r=localStorage.getItem(C.key);if(r)S=JSON.parse(r)}catch(e){}
   if(!S||typeof S!=="object")S={};
-  ["done","reps","med","rest"].forEach(function(k){if(!S[k]||typeof S[k]!=="object")S[k]={}});
+  ["done","reps","med","rest","tm","opened","steps","cron","shots","src"].forEach(function(k){if(!S[k]||typeof S[k]!=="object")S[k]={}});
   if(!Array.isArray(S.photos))S.photos=[];
 }
 function save(){try{localStorage.setItem(C.key,JSON.stringify(S));return true}catch(e){return false}}
@@ -148,7 +162,9 @@ var sel=key(today),armed=-1;
 function dayN(d){return Math.round((d-parse(S.start))/864e5)}
 function info(d){
   var n=dayN(d);if(n<0)return{k:"pre"};
-  var p=C.plan(dow(d),Math.floor(n/7)+1);
+  var w=Math.floor(n/7)+1;
+  if(C.testDay&&C.testDay.indexOf(key(d))>-1)return{k:"tr",p:C.walk(w)};
+  var p=C.plan(dow(d),w);
   return p?{k:"tr",p:p}:{k:"rest"};
 }
 function cnt(k){var o=S.done[k]||{},n=0;for(var i in o)if(o[i])n++;return n}
@@ -186,13 +202,20 @@ function lastReps(name){
   for(var j=0;j<ks.length;j++){if(ks[j]<sel&&S.reps[ks[j]][name])return S.reps[ks[j]][name]}
   return 0;
 }
+function hasActivity(){
+  var k,j;
+  for(k in S.done){for(j in S.done[k])if(S.done[k][j])return true}
+  for(k in S.rest)if(S.rest[k])return true;
+  return Object.keys(S.cron).length>0||Object.keys(S.med).length>0||Object.keys(S.shots).length>0||Object.keys(S.steps).length>0||S.photos.length>0;
+}
 function render(){
   var s=stats(),n=dayN(today),w=Math.floor(n/7)+1;
   $("h1").textContent=C.title;
-  $("sub").textContent=n<0?"Tu programa empieza el "+fmt(S.start):w>12?"¡Terminaste las 12 semanas! 🎉":"Semana "+w+" de 12 · "+C.phase(w);
+  $("sub").textContent=n<0?"Tu programa empieza el "+fmt(S.start):w>12?"Nivel intermedio · Semana "+w+" · "+C.phase(w):"Semana "+w+" de 12 · "+C.phase(w);
   $("streak").textContent=s.cur;$("best").textContent=s.best;$("tot").textContent=s.tot;$("rst").textContent=s.rs;
   $("start").value=S.start;
-  $("phc").style.display=s.best>=C.photoAt?"block":"none";
+  var act=hasActivity();$("start").disabled=act;$("startnote").textContent=act?"La fecha de inicio ya no se puede cambiar porque ya empezaste. Si necesitas empezar de cero, usa la opción de abajo.":"";
+  $("phc").style.display=(n>=0&&w>=2&&w%2===0)?"block":"none";
   var selD=parse(sel),mon=addD(selD,-dow(selD)),wk="";
   for(var i=0;i<7;i++){
     var d=addD(mon,i),k=key(d);
@@ -202,7 +225,7 @@ function render(){
   [].forEach.call($("week").querySelectorAll(".d"),function(b){b.onclick=function(){sel=b.dataset.k;render()}});
   renderDay();renderMed();renderPhotos();
 }
-var AU={},audName=null;
+var AU={},audName=null,DBG=location.search.indexOf("debug")>-1;
 function restInStreak(){
   var n=0,s0=parse(S.start);
   for(var d=new Date(today);d>=s0;d=addD(d,-1)){var q=st(d);if(q==="ok"){if(info(d).k==="rest")n++}else if(q==="no")break}
@@ -210,80 +233,203 @@ function restInStreak(){
 }
 function getAudio(name){
   if(AU[name])return AU[name];
-  var a=document.createElement("audio"),o={a:a,ok:false};
-  a.preload="metadata";
-  [["m4a","audio/mp4"],["mp3","audio/mpeg"],["ogg","audio/ogg"],["wav","audio/wav"],["aac","audio/aac"]].forEach(function(x){
-    var e=document.createElement("source");e.src="audios/"+name+"."+x[0];e.type=x[1];a.appendChild(e);
+  var o={a:document.createElement("audio"),ok:false,tried:[],url:"",err:false};
+  AU[name]=o;
+  o.a.preload="auto";
+  ["play","pause","ended"].forEach(function(ev){o.a.addEventListener(ev,showAud)});
+  o.a.addEventListener("error",function(){o.err=true;showAud()});
+  ["m4a","mp3","ogg","wav","aac"].reduce(function(p,x){
+    return p.then(function(found){
+      if(found)return found;
+      var u=C.audioDir+"/"+name+"."+x;
+      return fetch(u,{method:"HEAD",cache:"no-store"}).then(function(r){
+        var ct=r.headers.get("content-type")||"";
+        o.tried.push(x+":"+r.status);
+        return(r.ok&&!/text\/html/.test(ct))?u:null;
+      }).catch(function(){o.tried.push(x+":sin respuesta");return null});
+    });
+  },Promise.resolve(null)).then(function(u){
+    if(u){o.url=u;o.ok=true;o.a.src=u}
+    showAud();
   });
-  a.addEventListener("loadedmetadata",function(){o.ok=true;showAud()});
-  ["play","pause","ended"].forEach(function(ev){a.addEventListener(ev,showAud)});
-  AU[name]=o;a.load();
   return o;
 }
 function showAud(){
   var box=$("aud");if(!box)return;
-  var o=audName&&AU[audName];
-  if(!o||!o.ok){box.innerHTML="";return}
-  box.innerHTML='<button class="btn" id="ab" style="margin-bottom:12px">'+(o.a.paused?"🎧 Escuchar mensaje":"⏸ Pausar")+"</button>";
-  $("ab").onclick=function(){
-    if(o.a.paused){var p=o.a.play();if(p&&p.catch)p.catch(function(){})}else o.a.pause();
+  var o=audName&&AU[audName],h="";
+  if(o&&o.ok)h='<button class="btn" id="ab" style="margin-bottom:12px">'+(o.a.paused?"🎧 Escuchar mensaje":"⏸ Pausar")+"</button>";
+  if(o&&o.err)h+='<p class="note">No pude reproducir el audio. Intenta de nuevo.</p>';
+  if(DBG)h+='<p class="note">🔧 audio: '+audName+" · "+(o?(o.ok?"encontrado en "+o.url:"NO encontrado ("+o.tried.join(", ")+") en la carpeta "+C.audioDir):"sin consultar")+"</p>";
+  box.innerHTML=h;
+  var b=$("ab");
+  if(b)b.onclick=function(){
+    if(o.a.paused){var p=o.a.play();if(p&&p.catch)p.catch(function(){o.err=true;showAud()})}else o.a.pause();
   };
 }
+function ftime(ms){return new Date(ms).toLocaleTimeString("es",{hour:"numeric",minute:"2-digit"})}
+function fdur(ms){var s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function fmtn(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,",")}
+function weekSteps(d){
+  var mon=addD(d,-dow(d)),sum=0,w=Math.max(1,Math.floor(dayN(d)/7)+1);
+  for(var i=0;i<7;i++)sum+=S.steps[key(addD(mon,i))]||0;
+  return{sum:sum,goal:C.steps?C.steps(w)[0]*3:0};
+}
+function dataFile(u,name){var p=u.split(","),b=atob(p[1]),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new File([a],name,{type:"image/jpeg"})}
+function shrink(file,max,q,cb){
+  var img=new Image(),u=URL.createObjectURL(file);
+  img.onload=function(){
+    var s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement("canvas");
+    c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);cb(c.toDataURL("image/jpeg",q));
+  };
+  img.onerror=function(){cb(null)};
+  img.src=u;
+}
+function syncCron(k){
+  var i=info(parse(k)),cr=S.cron[k];
+  if(i.k!=="tr"||!cr||!cr.s)return;
+  var full=cnt(k)>=i.p.ex.length;
+  if(full&&!cr.e)cr.e=Date.now();else if(!full&&cr.e)delete cr.e;
+}
+function pickListo(walk){
+  var n=0;
+  for(var x=parse(S.start);x<=today;x=addD(x,1)){var q=info(x);if(q.k==="tr"&&!!q.p.walk===walk&&st(x)==="ok")n++}
+  n=Math.max(1,n);
+  var O=[1,2,4,5,6,7,8];
+  return walk?(n%2===1?3:O[(n/2-1)%7]):O[(n-1)%7];
+}
+function stepsMsg(v,lo){
+  var t="📷 Escribiste <b>"+fmtn(v)+" pasos</b>. ";
+  if(v>=lo)return t+(v>lo*1.1?"✅ ¡Meta cumplida, te pasaste de tu meta! 🔥":"✅ ¡Meta cumplida! 🎉");
+  if(v>=Math.round(lo*0.9))return t+"✅ Estás muy cerca, esto cuenta como meta cumplida. 🎉";
+  return t+"💪 ¡Lo hiciste muy bien! Te faltaron <b>"+fmtn(lo-v)+" pasos</b> para llegar a tu meta de "+fmtn(lo)+".";
+}
+function stepsPanel(p,fut){
+  var shot=S.shots[sel],sv=S.steps[sel],fin=!!(S.done[sel]||{})[0],lo=p.goal[0],ws=weekSteps(parse(sel));
+  var h='<div class="stp">';
+  if(!fin)h+='<p class="note">📱 Tu iPhone cuenta tus pasos solo en la app <b>Salud</b> (el icono blanco con un corazón rosa). Lleva el teléfono contigo mientras caminas o corres. Al terminar, abre <b>Salud → Pasos</b>, toma una captura de pantalla (botón lateral + subir volumen), súbela aquí y escribe los pasos que muestra.</p>';
+  if(shot)h+='<img src="'+shot+'" alt="Captura de pasos" style="max-width:150px;border-radius:10px;margin:4px 0 8px;display:block">';
+  if(!fin&&!fut)h+='<div class="row"><span class="btn up">📷 '+(shot?"Cambiar captura":"Subir captura de pasos")+'<input type="file" accept="image/*" id="stshot"></span></div>';
+  if(shot&&sv==null&&!fin&&!fut)h+='<p class="note" style="margin-top:8px">Escribe los pasos que muestra tu captura:</p><div class="row"><input type="number" inputmode="numeric" id="stin"><button class="btn" id="stman">Guardar pasos</button></div>';
+  if(shot&&sv!=null){
+    h+='<p class="note" style="font-weight:600">'+stepsMsg(sv,lo)+"</p>";
+    if(!fin)h+='<button class="tb" id="stfix">Corregir número</button><button class="btn" id="stfin" style="width:100%;margin-top:10px;font-size:17px">✅ Finalizar caminata</button>';
+  }
+  if(fin)h+='<p class="note" style="color:var(--ok);font-weight:600">✅ Caminata finalizada.</p>';
+  return h+'<p class="note" id="stmsg"></p><p class="note">Tu captura y tus pasos se envían cuando compartes tu resumen. Esta semana: '+fmtn(ws.sum)+" de "+fmtn(ws.goal)+" pasos.</p></div>";
+}
+var cfgArm="";
+function renderCfg(){
+  var ks=Object.keys(S.med).sort().reverse(),h="";
+  if(!ks.length)h='<p class="note">Aún no hay medidas guardadas.</p>';
+  ks.forEach(function(k){
+    h+='<div class="mrow" data-k="'+k+'"><b>'+fmt(k)+'</b><div class="mg">'+C.meas.map(function(x){var v=S.med[k][x[1]];return"<label>"+x[0]+" ("+x[2]+')<input type="number" inputmode="decimal" data-f="'+x[1]+'" value="'+(v==null?"":v)+'"></label>'}).join("")+'</div><button class="tb sv">Guardar cambios</button> <button class="tb rm">'+(cfgArm===k?"¿Seguro? Toca otra vez":"Borrar registro")+"</button></div>";
+  });
+  var box=$("cfgmed");box.innerHTML=h;
+  [].forEach.call(box.querySelectorAll(".mrow"),function(row){
+    var k=row.dataset.k;
+    row.querySelector(".sv").onclick=function(){
+      var o={},any=false;
+      [].forEach.call(row.querySelectorAll("input"),function(inp){var v=parseFloat(inp.value);if(!isNaN(v)){o[inp.dataset.f]=v;any=true}});
+      if(!any)return;
+      S.med[k]=o;save();renderMed();$("cfgmsg").textContent="Guardado ✓";
+    };
+    row.querySelector(".rm").onclick=function(){
+      if(cfgArm===k){delete S.med[k];cfgArm="";save();renderMed();$("cfgmsg").textContent="Registro borrado.";renderCfg()}
+      else{cfgArm=k;renderCfg()}
+    };
+  });
+}
 function renderDay(){
-  var d=parse(sel),i=info(d),fut=d>today,nice=DN[dow(d)]+" "+d.getDate()+"/"+(d.getMonth()+1),h="";
+  var d=parse(sel),i=info(d),fut=d>today,isT=sel===key(today),nice=DN[dow(d)]+" "+d.getDate()+"/"+(d.getMonth()+1),h="";
   if(i.k==="pre"){
-    h="<h2>Aún no empieza</h2><p class=\"note\">Tu programa empieza el "+fmt(S.start)+".</p>";
+    h='<h2>Aún no empieza</h2><p class="note">Tu programa empieza el '+fmt(S.start)+".</p>";
   }else if(i.k==="rest"){
     var on=S.rest[sel];
     h='<div class="rest"><div class="big">😴</div><h2>Día de descanso</h2><p class="note">'+nice+" · Márcalo para que cuente en tu racha.</p>"
      +'<button class="btn'+(fut?" dis":"")+'" id="rb">'+(on?"Descanso marcado ✓ (toca para quitar)":"Marcar día de descanso")+"</button></div>";
   }else{
-    var p=i.p,c=cnt(sel),n=p.ex.length,past=!fut&&sel!==key(today);
-    h="<h2>"+p.t+'</h2><p class="note">'+nice+(p.n?" · "+p.n:"")+(fut?" · aún no puedes marcar este día":"")+"</p>";
-    if(past&&c<n)h+='<p class="note red">❌ No hiciste tus ejercicios este día.</p>';
-    h+='<div class="bar"><div style="width:'+Math.round(c/n*100)+'%"></div></div><p class="note">'+c+" de "+n+" hechos"+(c===n?" · ¡día completo! 🎉":"")+"</p>";
-    h+="<div"+(fut?' class="dis"':"")+">";
-    p.ex.forEach(function(e,j){
-      var on=(S.done[sel]||{})[j];
-      h+='<div class="exw"><button class="ex'+(on?" on":"")+'" data-i="'+j+'"><span class="box">'+(on?"✓":"")+'</span><span class="nm">'+e[0]+'<span class="dt">'+e[1]+"</span></span></button>";
-      if(C.reps&&j>0){
-        var u=e[0].indexOf("Plancha")===0?"seg":"reps",r=(S.reps[sel]||{})[e[0]]||0,lw=lastReps(e[0]);
-        h+='<div class="ct"><button data-n="'+e[0]+'" data-s="-1">−</button><b>'+r+'</b><button data-n="'+e[0]+'" data-s="1">+</button><span>'+u+" en tu mejor serie"+(lw?" · última vez: "+lw:"")+"</span></div>";
-      }
+    var p=i.p,c=cnt(sel),n=p.ex.length,past=!fut&&!isT,cr=S.cron[sel]||{},lock=!!(p.walk&&C.steps);
+    h="<h2>"+p.t+'</h2><p class="note">'+nice+(p.n?" · "+p.n:"")+(C.testDay&&C.testDay.indexOf(sel)>-1?" · 🧪 día de prueba":"")+(fut?" · aún no puedes marcar este día":"")+"</p>";
+    if(isT&&!cr.s&&c<n){
+      h+='<button class="btn" id="go" style="width:100%;font-size:17px">▶ Empezar</button><p class="note" style="margin-top:8px">Al tocar Empezar se muestran tus ejercicios y arranca el cronómetro. Se detiene cuando marcas el último.</p>';
+    }else{
+      if(past&&c<n)h+='<p class="note red">❌ No hiciste tus ejercicios este día.</p>';
+      if(cr.s)h+='<p class="note">⏱ '+(cr.e?"Tiempo total: <b>"+Math.max(1,Math.round((cr.e-cr.s)/60000))+" min</b> ("+ftime(cr.s)+" → "+ftime(cr.e)+")":'<b class="tk" data-s="'+cr.s+'">'+fdur(Date.now()-cr.s)+"</b> en marcha")+"</p>";
+      h+='<div class="bar"><div style="width:'+Math.round(c/n*100)+'%"></div></div><p class="note">'+c+" de "+n+" hechos"+(c===n?" · ¡día completo! 🎉":"")+"</p>";
+      h+="<div"+(fut?' class="dis"':"")+">";
+      p.ex.forEach(function(e,j){
+        var o2=(S.done[sel]||{})[j];
+        h+='<div class="exw"><button class="ex'+(o2?" on":"")+'" data-i="'+j+'"'+(lock?" disabled":"")+'><span class="box">'+(o2?"✓":"")+'</span><span class="nm">'+e[0]+'<span class="dt">'+e[1]+"</span></span></button>";
+        if(C.reps&&j>0){
+          var u=e[0].indexOf("Plancha")===0?"seg":"reps",r=(S.reps[sel]||{})[e[0]]||0,lw=lastReps(e[0]);
+          h+='<div class="ct"><button data-n="'+e[0]+'" data-s="-1">−</button><b>'+r+'</b><button data-n="'+e[0]+'" data-s="1">+</button><span>'+u+" en tu mejor serie"+(lw?" · última vez: "+lw:"")+"</span></div>";
+        }
+        h+="</div>";
+      });
       h+="</div>";
-    });
-    h+="</div>";
+      if(lock)h+=stepsPanel(p,fut);
+    }
   }
-  if(C.msgs&&sel===key(today)&&i.k!=="pre"){
-    if(st(d)==="ok"){
+  if(DBG)h='<p class="note">🔧 estado del día: '+st(d)+" · es hoy: "+isT+" · tipo: "+i.k+(i.k==="tr"?" · hechos "+cnt(sel)+"/"+i.p.ex.length:"")+" · mensajes activos: "+!!C.msgs+" · fecha: "+key(today)+"</p>"+h;
+  if(C.msgs&&isT&&i.k!=="pre"&&st(d)==="ok"){
+    if(S.opened[sel]){
       var L=i.k==="rest"?C.msgs.rest:C.msgs.done;
       h='<div class="msg">💌 '+L[dayN(today)%L.length]+"</div>"+(C.audio?'<div id="aud"></div>':"")+h;
     }else{
-      h='<p class="note">🔒 Cuando '+(i.k==="rest"?"marques tu descanso":"termines tus ejercicios")+", aquí te espera un mensaje para ti 💌</p>"+h;
+      h='<button class="btn" id="gift" style="width:100%;font-size:17px;margin-bottom:12px">🎁 Tengo un mensaje para ti</button>'+h;
     }
   }
   var prev=audName;audName=null;
-  if(C.audio&&sel===key(today)&&i.k!=="pre"){
+  if(C.audio&&isT&&i.k!=="pre"){
     if(i.k==="rest"){
       if(S.rest[sel]){var rc=restInStreak();audName=rc===4?"descanso-4":"descanso-"+(((rc>4?rc-1:rc)-1)%3+1)}
-    }else if(st(d)==="ok"){audName="listo-"+((stats().tot-1)%8+1)}
+    }else if(st(d)==="ok"){audName="listo-"+pickListo(!!i.p.walk)}
   }
   var el=$("day");el.innerHTML=h;
-  if(prev&&prev!==audName&&AU[prev])AU[prev].a.pause();
+  if(prev&&prev!==audName&&typeof AU!=="undefined"&&AU[prev])AU[prev].a.pause();
   if(audName)getAudio(audName);
-  showAud();
+  if(typeof showAud==="function")showAud();
+  var go=$("go");if(go)go.onclick=function(){S.cron[sel]={s:Date.now()};save();render()};
   var rb=$("rb");if(rb)rb.onclick=function(){S.rest[sel]=!S.rest[sel];save();render()};
+  var gb=$("gift");
+  if(gb)gb.onclick=function(){
+    S.opened[sel]=true;save();render();
+    var o=audName&&AU[audName];
+    if(o&&o.ok){var pr=o.a.play();if(pr&&pr.catch)pr.catch(function(){})}
+  };
   [].forEach.call(el.querySelectorAll(".ex"),function(b){b.onclick=function(){
-    var o=S.done[sel]||(S.done[sel]={}),j=b.dataset.i;o[j]=!o[j];save();render();
+    var o=S.done[sel]||(S.done[sel]={}),j=b.dataset.i;o[j]=!o[j];syncCron(sel);save();render();
   }});
   [].forEach.call(el.querySelectorAll(".ct button"),function(b){b.onclick=function(){
     var o=S.reps[sel]||(S.reps[sel]={}),nm=b.dataset.n;o[nm]=Math.max(0,(o[nm]||0)+(+b.dataset.s));save();render();
   }});
+  var sh=$("stshot");
+  if(sh)sh.onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    shrink(f,1400,0.6,function(u){
+      if(!u){$("stmsg").textContent="No pude leer esa imagen, intenta con otra.";return}
+      S.shots[sel]=u;delete S.steps[sel];
+      if(!save()){delete S.shots[sel];$("stmsg").textContent="No hay espacio para guardar la captura. Descarga tu respaldo y borra fotos antiguas.";return}
+      render();
+    });
+  };
+  var sm=$("stman");
+  if(sm)sm.onclick=function(){
+    var v=parseInt($("stin").value,10)||0;
+    if(v<1)return;
+    S.steps[sel]=v;save();render();
+  };
+  var sx=$("stfix");
+  if(sx)sx.onclick=function(){delete S.steps[sel];save();render()};
+  var sf=$("stfin");
+  if(sf)sf.onclick=function(){(S.done[sel]||(S.done[sel]={}))[0]=true;syncCron(sel);save();render()};
 }
 function renderMed(){
   var ks=Object.keys(S.med).sort(),last=ks[ks.length-1];
-  var due=!last||last===key(today)||Math.round((today-parse(last))/864e5)>=30;
-  $("medform").style.display=due?"block":"none";
+  var due=!last||Math.round((today-parse(last))/864e5)>=30;
+  $("medform").style.display=due?"block":"none";$("medc").style.display=due?"block":"none";
   $("mednote").textContent=due?C.medNote:"Las medidas se toman una vez al mes. Tu próxima medición es el "+fmt(key(addD(parse(last),30)))+".";
   var el=$("medlist");
   if(!ks.length){el.innerHTML='<p class="note">Aún no hay medidas guardadas.</p>';return}
@@ -300,7 +446,7 @@ function renderPhotos(){
   if(!S.photos.length){el.innerHTML='<p class="note">Aún no hay fotos.</p>';return}
   for(var i=S.photos.length-1;i>=0;i--){
     var p=S.photos[i];
-    h+='<figure class="ph"><img src="'+p.src+'" alt="Foto de progreso"><figcaption>'+fmt(p.d)+" · "+p.l+'</figcaption><button data-i="'+i+'">'+(armed===i?"¿Borrar? Toca otra vez":"Borrar")+"</button></figure>";
+    h+='<figure class="ph"><img src="'+p.src+'" alt="Foto de progreso"><figcaption>Semana '+(Math.floor(dayN(parse(p.d))/7)+1)+" · "+fmt(p.d)+" · "+p.l+'</figcaption><button data-i="'+i+'">'+(armed===i?"¿Borrar? Toca otra vez":"Borrar")+"</button></figure>";
   }
   el.innerHTML=h;
   [].forEach.call(el.querySelectorAll("button"),function(b){b.onclick=function(){
@@ -312,9 +458,14 @@ function renderPhotos(){
 function summary(){
   var s=stats(),n=dayN(today),w=Math.floor(n/7)+1,mon=addD(today,-dow(today)),days="";
   for(var i=0;i<7;i++)days+=DN[i]+" "+icon(addD(mon,i))+"  ";
-  var t="📋 Mi progreso"+(n>=0&&w<=12?" · Semana "+w+" de 12":"")+"\n🔥 Racha: "+s.cur+" días (mejor: "+s.best+")\n✅ Entrenos completos: "+s.tot+" · 😴 Descansos marcados: "+s.rs+"\n📅 Esta semana: "+days.trim();
-  var ks=Object.keys(S.med).sort();
-  if(ks.length){
+  var t="📋 Mi progreso"+(n>=0?(w>12?" · Nivel intermedio · Semana "+w:" · Semana "+w+" de 12"):"")+"\n🔥 Racha: "+s.cur+" días (mejor: "+s.best+")\n✅ Entrenos completos: "+s.tot+" · 😴 Descansos marcados: "+s.rs+"\n📅 Esta semana: "+days.trim();
+  var tt=0,tp=[];
+  for(var q2=0;q2<7;q2++){var cr2=S.cron[key(addD(mon,q2))];if(cr2&&cr2.s&&cr2.e){var mm=Math.max(1,Math.round((cr2.e-cr2.s)/60000));tt+=mm;tp.push(DN[q2]+" "+mm+" min")}}
+  if(tp.length)t+="\n⏱ Tiempo de entreno: "+tp.join(" · ")+" (total "+tt+" min)";
+  if(C.steps){var wsum=weekSteps(today);var sp=[];for(var q3=0;q3<7;q3++){var kd=key(addD(mon,q3));if(S.steps[kd]!=null)sp.push(DN[q3]+" "+fmtn(S.steps[kd]))}t+="\n👟 Pasos: "+(sp.length?sp.join(" · ")+" · ":"")+"semana "+fmtn(wsum.sum)+" de "+fmtn(wsum.goal)}
+  var ks=Object.keys(S.med).sort(),chg=false;
+  if(ks.length>1){var pa=S.med[ks[ks.length-2]],pb=S.med[ks[ks.length-1]];C.meas.forEach(function(x){if(pa[x[1]]!==pb[x[1]])chg=true})}
+  if(chg){
     var m=S.med[ks[ks.length-1]],f=S.med[ks[0]],parts=[];
     C.meas.forEach(function(x){
       var v=m[x[1]];if(v==null)return;
@@ -324,7 +475,7 @@ function summary(){
     });
     t+="\n📏 Medidas ("+fmt(ks[ks.length-1])+"): "+parts.join(", ");
   }
-  if(s.best>=C.photoAt)t+="\n📸 Fotos guardadas: "+S.photos.length;
+  if(S.photos.length)t+="\n📸 Fotos guardadas: "+S.photos.length;
   return t;
 }
 (function(){
@@ -335,10 +486,17 @@ function summary(){
     var m={},any=false;
     C.meas.forEach(function(x){var v=parseFloat($("m_"+x[1]).value);if(!isNaN(v)){m[x[1]]=v;any=true}});
     if(!any)return;
-    S.med[key(today)]=m;save();renderMed();
-    this.textContent="¡Guardado! ✓";var b=this;setTimeout(function(){b.textContent="Guardar medidas"},1500);
+    S.med[key(today)]=m;save();
+    this.textContent="¡Guardado! ✓";var b=this;setTimeout(function(){b.textContent="Guardar medidas";renderMed()},1500);
   };
-  $("start").onchange=function(e){if(e.target.value){S.start=e.target.value;save();render()}};
+  $("gear").onclick=function(){var c=$("cfg"),op=c.style.display==="none";c.style.display=op?"block":"none";if(op){$("cfgmsg").textContent="";renderCfg()}};
+  var rsArm=false;
+  $("cfgreset").onclick=function(){
+    if(!rsArm){rsArm=true;this.textContent="¿Seguro? Se borra TODO. Toca otra vez";return}
+    rsArm=false;this.textContent="Borrar todo y empezar de nuevo";
+    S={};load2();S.start=key(today);sel=key(today);save();$("cfg").style.display="none";render();
+  };
+  $("start").onchange=function(e){if(hasActivity())return;if(e.target.value){S.start=e.target.value;save();render()}};
   $("ph_in").onchange=function(e){
     var f=e.target.files[0],pm=$("phmsg");if(!f)return;
     pm.textContent="";
@@ -358,7 +516,12 @@ function summary(){
   $("sh").onclick=async function(){
     var t=summary(),ta=$("shtxt"),m=$("shmsg");
     ta.style.display="block";ta.value=t;m.textContent="";
-    try{if(navigator.share){await navigator.share({text:t});return}}catch(e){if(e&&e.name==="AbortError")return}
+    var files=[],mon0=addD(today,-dow(today));
+    for(var q=0;q<7;q++){var kk=key(addD(mon0,q));if(S.shots[kk])files.push(dataFile(S.shots[kk],"pasos-"+kk+".jpg"))}
+    try{
+      if(files.length&&navigator.canShare&&navigator.canShare({files:files})){await navigator.share({text:t,files:files});return}
+      if(navigator.share){await navigator.share({text:t});if(files.length)m.textContent="Tu teléfono no permitió adjuntar las capturas. Mándalas aparte desde tu galería.";return}
+    }catch(e){if(e&&e.name==="AbortError")return}
     try{await navigator.clipboard.writeText(t);m.textContent="Copiado ✓ Ya puedes pegarlo en WhatsApp."}
     catch(e){ta.focus();ta.select();m.textContent="Mantén presionado el texto, elige Copiar y pégalo en WhatsApp."}
   };
@@ -390,9 +553,10 @@ function summary(){
   };
 })();
 function load2(){
-  ["done","reps","med","rest"].forEach(function(k){if(!S[k]||typeof S[k]!=="object")S[k]={}});
+  ["done","reps","med","rest","tm","opened","steps","cron","shots","src"].forEach(function(k){if(!S[k]||typeof S[k]!=="object")S[k]={}});
   if(!Array.isArray(S.photos))S.photos=[];
 }
+setInterval(function(){[].forEach.call(document.querySelectorAll(".tk"),function(e){e.textContent=fdur(Date.now()-(+e.dataset.s))})},1000);
 render();
 </script>
 </body>
