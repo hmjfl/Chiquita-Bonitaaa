@@ -233,25 +233,13 @@ function restInStreak(){
 }
 function getAudio(name){
   if(AU[name])return AU[name];
-  var o={a:document.createElement("audio"),ok:false,tried:[],url:"",err:false};
+  var u=C.audioDir+"/"+name+".m4a";
+  var o={a:document.createElement("audio"),ok:true,tried:[],url:u,err:false};
   AU[name]=o;
   o.a.preload="auto";
+  o.a.src=u;
   ["play","pause","ended"].forEach(function(ev){o.a.addEventListener(ev,showAud)});
-  o.a.addEventListener("error",function(){o.err=true;showAud()});
-  ["m4a","mp3","ogg","wav","aac"].reduce(function(p,x){
-    return p.then(function(found){
-      if(found)return found;
-      var u=C.audioDir+"/"+name+"."+x;
-      return fetch(u,{method:"HEAD",cache:"no-store"}).then(function(r){
-        var ct=r.headers.get("content-type")||"";
-        o.tried.push(x+":"+r.status);
-        return(r.ok&&!/text\/html/.test(ct))?u:null;
-      }).catch(function(){o.tried.push(x+":sin respuesta");return null});
-    });
-  },Promise.resolve(null)).then(function(u){
-    if(u){o.url=u;o.ok=true;o.a.src=u}
-    showAud();
-  });
+  o.a.addEventListener("error",function(){o.err=true;o.ok=false;showAud()});
   return o;
 }
 function showAud(){
