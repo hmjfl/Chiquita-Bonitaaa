@@ -65,7 +65,7 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
   <h2 style="font-size:15px;margin-top:12px">🧹 Empezar de cero</h2>
   <button class="tb" id="cfgreset">Borrar todo y empezar de nuevo</button>
   <p class="note" id="cfgmsg"></p>
-  <p class="note">Versión de la página: v9-audio-fijo</p>
+  <p class="note">Versión oficial: v10-final</p>
 </div>
 <div class="card stats">
   <div class="stat"><b id="streak">0</b><span>🔥 racha</span></div>
@@ -75,7 +75,7 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
 </div>
 <div class="card"><div class="week" id="week"></div>
 <p class="note" style="margin:8px 0 0">✅ hecho · 😴 descanso · ❌ pendiente</p></div>
-<div class="card" id="aud"></div>
+<div class="card" id="aud" style="display:none"></div>
 <div class="card" id="day"></div>
 <div class="card" id="medc">
   <h2>📏 Mis medidas</h2>
@@ -109,7 +109,7 @@ input[type=date]{font:inherit;margin-left:6px;background:var(--card);color:var(-
 <script>
 var C={
  key:"rutina_ella_v2",file:"mi-plan-respaldo",title:"Mi plan de 12 semanas ✨",
- photoWeeks:[2,4,6,8,10,12],audioDir:"a7k2q9m4x1",testDay:["2026-11-09","2026-11-08"],reps:false,
+ photoWeeks:[2,4,6,8,10,12],audioDir:"a7k2q9m4x1",reps:false,
  meas:[["Peso","peso","lb"],["Estatura","est","cm"]],delta:false,audio:true,
  medNote:"Mídete una vez al mes, a la misma hora.",
  phase:function(w){return w<=2?"Series: 2 · ritmo suave (ideal para empezar tras trabajar)":w<=4?"Series: 2 · ritmo moderado":w<=6?"Series: 2–3 · ritmo moderado":w<=10?"Series: 3 · ritmo moderado":"3 series · mantenimiento"},
@@ -165,11 +165,6 @@ function dayN(d){return Math.round((d-parse(S.start))/864e5)}
 function info(d){
   var n=dayN(d);if(n<0)return{k:"pre"};
   var w=Math.max(1,Math.floor(n/7)+1);
-  if(C.testDay&&C.testDay.indexOf(key(d))>-1){
-    // Forzamos el día 9 de nov a ser un día de ejercicios suaves para probar
-    if(key(d)==="2026-11-09")return{k:"tr",p:C.plan(0,w)};
-    return{k:"tr",p:C.walk(w)};
-  }
   var p=C.plan(dow(d),w);
   return p?{k:"tr",p:p}:{k:"rest"};
 }
@@ -228,6 +223,18 @@ function render(){
 }
 
 var AU={},audName=null;
+function restInStreak(){
+  var n=0,s0=parse(S.start);
+  for(var d=new Date(today);d>=s0;d=addD(d,-1)){var q=st(d);if(q==="ok"){if(info(d).k==="rest")n++}else if(q==="no")break}
+  return n;
+}
+function pickListo(walk){
+  var n=0;
+  for(var x=parse(S.start);x<=today;x=addD(x,1)){var q=info(x);if(q.k==="tr"&&!!q.p.walk===walk&&st(x)==="ok")n++}
+  n=Math.max(1,n);
+  var O=[1,2,4,5,6,7,8],W=[3,8,5,1,7,2,6,4];
+  return walk?W[(n-1)%8]:O[(n-1)%7];
+}
 function getAudio(name){
   if(AU[name])return AU[name];
   var u=C.audioDir+"/"+name+".m4a";
@@ -243,31 +250,14 @@ function showAud(){
   var box=$("aud");if(!box)return;
   var o=audName&&AU[audName],h="";
   if(o&&o.ok){
+    box.style.display="block";
     h=S.opened[sel]
       ?'<button class="btn" id="ab" style="width:100%;margin-bottom:4px">'+(o.a.paused?"🎧 Escuchar mensaje de audio":"⏸ Pausar audio")+"</button>"
       :'<button class="btn" id="gift" style="width:100%;font-size:17px;margin-bottom:4px">🎁 Tengo un mensaje para ti</button>';
+  }else{
+    box.style.display="none";
   }
-  if(o&&o.err)h+='<p class="note">No se pudo cargar el audio.</p>';
-  
-  // PRUEBA RÁPIDA: Selector para probar cualquier audio al instante
-  h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);display:flex;gap:6px;align-items:center"><span style="font-size:12px">🧪 Probar audio:</span><select id="test_au" style="font-size:12px;padding:4px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:6px"><option value="">Selecciona...</option>';
-  for(var i=1;i<=8;i++)h+='<option value="listo-'+i+'">listo-'+i+'</option>';
-  for(var j=1;j<=4;j++)h+='<option value="descanso-'+j+'">descanso-'+j+'</option>';
-  h+='</select></div>';
-
   box.innerHTML=h;
-  
-  var selTest=$("test_au");
-  if(selTest){
-    selTest.onchange=function(){
-      if(!this.value)return;
-      audName=this.value;
-      var testO=getAudio(audName);
-      testO.a.play().catch(function(){});
-      S.opened[sel]=true;
-      showAud();
-    };
-  }
 
   var g=$("gift");
   if(g)g.onclick=function(){
@@ -289,7 +279,6 @@ function weekSteps(d){
   for(var i=0;i<7;i++)sum+=S.steps[key(addD(mon,i))]||0;
   return{sum:sum,goal:C.steps?C.steps(w)[0]*3:0};
 }
-function dataFile(u,name){var p=u.split(","),b=atob(p[1]),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new File([a],name,{type:"image/jpeg"})}
 function shrink(file,max,q,cb){
   var img=new Image(),u=URL.createObjectURL(file);
   img.onload=function(){
@@ -306,13 +295,6 @@ function syncCron(k){
   if(i.k!=="tr"||!cr||!cr.s)return;
   var full=cnt(k)>=i.p.ex.length;
   if(full&&!cr.e)cr.e=Date.now();else if(!full&&cr.e)delete cr.e;
-}
-function pickListo(walk){
-  var n=0;
-  for(var x=parse(S.start);x<=today;x=addD(x,1)){var q=info(x);if(q.k==="tr"&&!!q.p.walk===walk&&st(x)==="ok")n++}
-  n=Math.max(1,n);
-  var O=[1,2,4,5,6,7,8],W=[3,8,5,1,7,2,6,4];
-  return walk?W[(n-1)%8]:O[(n-1)%7];
 }
 function stepsMsg(v,lo){
   var t="📷 <b>"+fmtn(v)+" pasos</b>. ";
@@ -381,9 +363,18 @@ function renderDay(){
     }
   }
   
-  // Audio automático para hoy (siempre activo para pruebas)
-  audName="listo-1";
-  getAudio(audName);
+  // Asignación de audios según el día completado o marcado
+  var prev=audName;audName=null;
+  if(C.audio&&isT&&i.k!=="pre"){
+    if(i.k==="rest"){
+      if(S.rest[sel]){var rc=restInStreak();audName=rc===4?"descanso-4":"descanso-"+(((rc>4?rc-1:rc)-1)%3+1)}
+    }else if(st(d)==="ok"){
+      audName="listo-"+pickListo(!!i.p.walk);
+    }
+  }
+  
+  if(prev&&prev!==audName&&AU[prev])AU[prev].a.pause();
+  if(audName)getAudio(audName);
   showAud();
 
   var el=$("day");el.innerHTML=h;
